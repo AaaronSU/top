@@ -22,18 +22,20 @@ void solve_jacobi(mesh_t *A, mesh_t const *B, mesh_t *C)
 
                 for (usz o = 1; o <= STENCIL_ORDER; ++o)
                 {
-                    C->cells[i][j][k].value += A->cells[i + o][j][k].value *
-                                               B->cells[i + o][j][k].value / pow(17.0, (f64)o);
+                    f64 power = pow(17, (f64)o);
+                    C->cells[i][j][k]
+                        .value += A->cells[i + o][j][k].value *
+                                  B->cells[i + o][j][k].value / power;
                     C->cells[i][j][k].value += A->cells[i - o][j][k].value *
-                                               B->cells[i - o][j][k].value / pow(17.0, (f64)o);
+                                               B->cells[i - o][j][k].value / power;
                     C->cells[i][j][k].value += A->cells[i][j + o][k].value *
-                                               B->cells[i][j + o][k].value / pow(17.0, (f64)o);
+                                               B->cells[i][j + o][k].value / power;
                     C->cells[i][j][k].value += A->cells[i][j - o][k].value *
-                                               B->cells[i][j - o][k].value / pow(17.0, (f64)o);
+                                               B->cells[i][j - o][k].value / power;
                     C->cells[i][j][k].value += A->cells[i][j][k + o].value *
-                                               B->cells[i][j][k + o].value / pow(17.0, (f64)o);
+                                               B->cells[i][j][k + o].value / power;
                     C->cells[i][j][k].value += A->cells[i][j][k - o].value *
-                                               B->cells[i][j][k - o].value / pow(17.0, (f64)o);
+                                               B->cells[i][j][k - o].value / power;
                 }
             }
         }
