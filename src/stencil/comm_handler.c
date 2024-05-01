@@ -134,11 +134,11 @@ static void ghost_exchange_left_right(
                 {
                 case COMM_KIND_SEND_OP:
                     MPI_Send(
-                        &mesh->cells[i][j][k].value, 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
+                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k], 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
                     break;
                 case COMM_KIND_RECV_OP:
                     MPI_Recv(
-                        &mesh->cells[i][j][k].value,
+                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k],
                         1,
                         MPI_DOUBLE,
                         target,
@@ -172,11 +172,11 @@ static void ghost_exchange_top_bottom(
                 {
                 case COMM_KIND_SEND_OP:
                     MPI_Send(
-                        &mesh->cells[i][j][k].value, 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
+                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k], 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
                     break;
                 case COMM_KIND_RECV_OP:
                     MPI_Recv(
-                        &mesh->cells[i][j][k].value,
+                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k],
                         1,
                         MPI_DOUBLE,
                         target,
@@ -210,11 +210,11 @@ static void ghost_exchange_front_back(
                 {
                 case COMM_KIND_SEND_OP:
                     MPI_Send(
-                        &mesh->cells[i][j][k].value, 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
+                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k], 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
                     break;
                 case COMM_KIND_RECV_OP:
                     MPI_Recv(
-                        &mesh->cells[i][j][k].value,
+                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k],
                         1,
                         MPI_DOUBLE,
                         target,

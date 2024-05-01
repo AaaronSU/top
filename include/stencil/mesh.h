@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../types.h"
+#include <stddef.h>
 
 #define STENCIL_ORDER 8UL
 
@@ -10,11 +11,7 @@ typedef enum cell_kind_e
     CELL_KIND_PHANTOM,
 } cell_kind_t;
 
-typedef struct cell_s
-{
-    f64 value;
-    cell_kind_t kind;
-} cell_t;
+typedef f64 cell_t;
 
 typedef enum mesh_kind_e
 {
@@ -30,7 +27,8 @@ typedef struct mesh_s
     usz dim_x;
     usz dim_y;
     usz dim_z;
-    cell_t ***cells;
+    cell_t *cells;
+    cell_kind_t *cells_kind;
     mesh_kind_t kind;
 } mesh_t;
 

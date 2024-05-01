@@ -18,24 +18,23 @@ void solve_jacobi(mesh_t *A, mesh_t const *B, mesh_t *C)
         {
             for (usz i = STENCIL_ORDER; i < dim_x - STENCIL_ORDER; ++i)
             {
-                C->cells[i][j][k].value = A->cells[i][j][k].value * B->cells[i][j][k].value;
+                C->cells[dim_x * dim_y * i + dim_y * j + k] = A->cells[dim_x * dim_y * i + dim_y * j + k] * B->cells[dim_x * dim_y * i + dim_y * j + k];
 
                 for (usz o = 1; o <= STENCIL_ORDER; ++o)
                 {
                     f64 power = pow(17, (f64)o);
-                    C->cells[i][j][k]
-                        .value += A->cells[i + o][j][k].value *
-                                  B->cells[i + o][j][k].value / power;
-                    C->cells[i][j][k].value += A->cells[i - o][j][k].value *
-                                               B->cells[i - o][j][k].value / power;
-                    C->cells[i][j][k].value += A->cells[i][j + o][k].value *
-                                               B->cells[i][j + o][k].value / power;
-                    C->cells[i][j][k].value += A->cells[i][j - o][k].value *
-                                               B->cells[i][j - o][k].value / power;
-                    C->cells[i][j][k].value += A->cells[i][j][k + o].value *
-                                               B->cells[i][j][k + o].value / power;
-                    C->cells[i][j][k].value += A->cells[i][j][k - o].value *
-                                               B->cells[i][j][k - o].value / power;
+                    C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * (i + o) + dim_y * j + k] *
+                                                                   B->cells[dim_x * dim_y * (i + o) + dim_y * j + k] / power;
+                    C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * (i - o) + dim_y * j + k] *
+                                                                   B->cells[dim_x * dim_y * (i - o) + dim_y * j + k] / power;
+                    C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * i + dim_y * (j + o) + k] *
+                                                                   B->cells[dim_x * dim_y * i + dim_y * (j + o) + k] / power;
+                    C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * i + dim_y * (j - o) + k] *
+                                                                   B->cells[dim_x * dim_y * i + dim_y * (j - o) + k] / power;
+                    C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * i + dim_y * j + k + o] *
+                                                                   B->cells[dim_x * dim_y * i + dim_y * j + k + o] / power;
+                    C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * i + dim_y * j + k - o] *
+                                                                   B->cells[dim_x * dim_y * i + dim_y * j + k - o] / power;
                 }
             }
         }
