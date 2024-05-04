@@ -119,44 +119,36 @@ void comm_handler_print(comm_handler_t const *self)
 static void ghost_exchange_left_right(
     comm_handler_t const *self, mesh_t *mesh, comm_kind_t comm_kind, i32 target, usz x_start)
 {
+    MPI_Request *request;
     if (target < 0)
     {
         return;
     }
 
-    for (usz i = x_start; i < x_start + STENCIL_ORDER; ++i)
+    switch (comm_kind)
     {
-        for (usz j = 0; j < mesh->dim_y; ++j)
-        {
-            for (usz k = 0; k < mesh->dim_z; ++k)
-            {
-                switch (comm_kind)
-                {
-                case COMM_KIND_SEND_OP:
-                    MPI_Send(
-                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k], 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
-                    break;
-                case COMM_KIND_RECV_OP:
-                    MPI_Recv(
-                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k],
-                        1,
-                        MPI_DOUBLE,
-                        target,
-                        0,
-                        MPI_COMM_WORLD,
-                        MPI_STATUS_IGNORE);
-                    break;
-                default:
-                    __builtin_unreachable();
-                }
-            }
-        }
+    case COMM_KIND_SEND_OP:
+        MPI_Ibsend(
+            &mesh->cells[mesh->dim_x * mesh->dim_y * (x_start)], mesh->dim_y * mesh->dim_z * STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, request);
+        break;
+    case COMM_KIND_RECV_OP:
+        MPI_Recv(
+            &mesh->cells[mesh->dim_x * mesh->dim_y * (x_start)], mesh->dim_y * mesh->dim_z * STENCIL_ORDER,
+            MPI_DOUBLE,
+            target,
+            0,
+            MPI_COMM_WORLD,
+            MPI_STATUS_IGNORE);
+        break;
+    default:
+        __builtin_unreachable();
     }
 }
 
 static void ghost_exchange_top_bottom(
     comm_handler_t const *self, mesh_t *mesh, comm_kind_t comm_kind, i32 target, usz y_start)
 {
+    MPI_Request *request;
     if (target < 0)
     {
         return;
@@ -164,30 +156,22 @@ static void ghost_exchange_top_bottom(
 
     for (usz i = 0; i < mesh->dim_x; ++i)
     {
-        for (usz j = y_start; j < y_start + STENCIL_ORDER; ++j)
+
+        switch (comm_kind)
         {
-            for (usz k = 0; k < mesh->dim_z; ++k)
-            {
-                switch (comm_kind)
-                {
-                case COMM_KIND_SEND_OP:
-                    MPI_Send(
-                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k], 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
-                    break;
-                case COMM_KIND_RECV_OP:
-                    MPI_Recv(
-                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k],
-                        1,
-                        MPI_DOUBLE,
-                        target,
-                        0,
-                        MPI_COMM_WORLD,
-                        MPI_STATUS_IGNORE);
-                    break;
-                default:
-                    __builtin_unreachable();
-                }
-            }
+        case COMM_KIND_SEND_OP:
+            MPI_Ibsend(
+                &mesh->cells[mesh->dim_y * (y_start)], mesh->dim_z * STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, request);
+        case COMM_KIND_RECV_OP:
+            MPI_Recv(
+                &mesh->cells[mesh->dim_y * (y_start)], mesh->dim_z * STENCIL_ORDER, MPI_DOUBLE,
+                target,
+                0,
+                MPI_COMM_WORLD,
+                MPI_STATUS_IGNORE);
+            break;
+        default:
+            __builtin_unreachable();
         }
     }
 }
@@ -195,6 +179,7 @@ static void ghost_exchange_top_bottom(
 static void ghost_exchange_front_back(
     comm_handler_t const *self, mesh_t *mesh, comm_kind_t comm_kind, i32 target, usz z_start)
 {
+    MPI_Request *request;
     if (target < 0)
     {
         return;
@@ -204,27 +189,22 @@ static void ghost_exchange_front_back(
     {
         for (usz j = 0; j < mesh->dim_y; ++j)
         {
-            for (usz k = z_start; k < z_start + STENCIL_ORDER; ++k)
+            switch (comm_kind)
             {
-                switch (comm_kind)
-                {
-                case COMM_KIND_SEND_OP:
-                    MPI_Send(
-                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k], 1, MPI_DOUBLE, target, 0, MPI_COMM_WORLD);
-                    break;
-                case COMM_KIND_RECV_OP:
-                    MPI_Recv(
-                        &mesh->cells[mesh->dim_x * mesh->dim_y * i + mesh->dim_y * j + k],
-                        1,
-                        MPI_DOUBLE,
-                        target,
-                        0,
-                        MPI_COMM_WORLD,
-                        MPI_STATUS_IGNORE);
-                    break;
-                default:
-                    __builtin_unreachable();
-                }
+            case COMM_KIND_SEND_OP:
+                MPI_Ibsend(
+                    &mesh->cells[z_start], STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, request);
+                break;
+            case COMM_KIND_RECV_OP:
+                MPI_Recv(
+                    &mesh->cells[z_start], STENCIL_ORDER, MPI_DOUBLE,
+                    target,
+                    0,
+                    MPI_COMM_WORLD,
+                    MPI_STATUS_IGNORE);
+                break;
+            default:
+                __builtin_unreachable();
             }
         }
     }
@@ -234,26 +214,23 @@ void comm_handler_ghost_exchange(comm_handler_t const *self, mesh_t *mesh)
 {
     // Left to right phase
     ghost_exchange_left_right(self, mesh, COMM_KIND_SEND_OP, self->id_right, mesh->dim_x - 2 * STENCIL_ORDER);
-    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_left, 0);
     // Right to left phase
     ghost_exchange_left_right(self, mesh, COMM_KIND_SEND_OP, self->id_left, STENCIL_ORDER);
-    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_right, mesh->dim_x - STENCIL_ORDER);
     // Prevent mixing communication from left/right with top/bottom and front/back
-    MPI_Barrier(MPI_COMM_WORLD);
-
     // Top to bottom phase
     ghost_exchange_top_bottom(self, mesh, COMM_KIND_SEND_OP, self->id_top, mesh->dim_y - 2 * STENCIL_ORDER);
-    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_bottom, 0);
     // Bottom to top phase
     ghost_exchange_top_bottom(self, mesh, COMM_KIND_SEND_OP, self->id_bottom, STENCIL_ORDER);
-    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_top, mesh->dim_y - STENCIL_ORDER);
     // Prevent mixing communication from top/bottom with left/right and front/back
-    MPI_Barrier(MPI_COMM_WORLD);
-
     // Front to back phase
     ghost_exchange_front_back(self, mesh, COMM_KIND_SEND_OP, self->id_back, mesh->dim_z - 2 * STENCIL_ORDER);
-    ghost_exchange_front_back(self, mesh, COMM_KIND_RECV_OP, self->id_front, 0);
     // Back to front phase
     ghost_exchange_front_back(self, mesh, COMM_KIND_SEND_OP, self->id_front, STENCIL_ORDER);
+
+    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_left, 0);
+    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_right, mesh->dim_x - STENCIL_ORDER);
+    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_bottom, 0);
+    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_top, mesh->dim_y - STENCIL_ORDER);
+    ghost_exchange_front_back(self, mesh, COMM_KIND_RECV_OP, self->id_front, 0);
     ghost_exchange_front_back(self, mesh, COMM_KIND_RECV_OP, self->id_back, mesh->dim_z - STENCIL_ORDER);
 }

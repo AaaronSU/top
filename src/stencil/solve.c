@@ -22,7 +22,7 @@ void solve_jacobi(mesh_t *A, mesh_t const *B, mesh_t *C)
 
                 for (usz o = 1; o <= STENCIL_ORDER; ++o)
                 {
-                    f64 power = pow(17, (f64)o);
+                    f64 power = pow(17.0, (f64)o);
                     C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * (i + o) + dim_y * j + k] *
                                                                    B->cells[dim_x * dim_y * (i + o) + dim_y * j + k] / power;
                     C->cells[dim_x * dim_y * i + dim_y * j + k] += A->cells[dim_x * dim_y * (i - o) + dim_y * j + k] *

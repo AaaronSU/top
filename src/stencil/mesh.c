@@ -38,6 +38,10 @@ void mesh_drop(mesh_t *self)
     {
         free(self->cells);
     }
+    if (NULL != self->cells_kind)
+    {
+        free(self->cells_kind);
+    }
 }
 
 static char const *mesh_kind_as_str(mesh_t const *self)
