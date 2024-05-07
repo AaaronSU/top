@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define MAXLEN 8UL
+#define MAXLEN 16UL
 
 static u32 gcd(u32 a, u32 b)
 {
@@ -31,6 +31,7 @@ comm_handler_t comm_handler_new(u32 rank, u32 comm_size, usz dim_x, usz dim_y, u
     u32 const nb_z = gcd(comm_size, (u32)(dim_x * dim_y));
     u32 const nb_y = gcd(comm_size / nb_z, (u32)dim_z);
     u32 const nb_x = (comm_size / nb_z) / nb_y;
+    // printf("nb_z: %d\nnb_y: %d\nnb_z: %d\n", nb_z, nb_y, nb_x);
 
     if (comm_size != nb_x * nb_y * nb_z)
     {
@@ -44,6 +45,8 @@ comm_handler_t comm_handler_new(u32 rank, u32 comm_size, usz dim_x, usz dim_y, u
     u32 const rank_z = rank / (comm_size / nb_z);
     u32 const rank_y = (rank % (comm_size / nb_z)) / (comm_size / nb_y);
     u32 const rank_x = (rank % (comm_size / nb_z)) % (comm_size / nb_y);
+    printf("rank_z: %d\nrank_y: %d\nrank_z: %d\n", nb_z, nb_y, nb_x);
+    // exit(0);
 
     // Setup size
     usz const loc_dim_z = (rank_z == nb_z - 1) ? dim_z / nb_z + dim_z % nb_z : dim_z / nb_z;
@@ -119,7 +122,7 @@ void comm_handler_print(comm_handler_t const *self)
 static void ghost_exchange_left_right(
     comm_handler_t const *self, mesh_t *mesh, comm_kind_t comm_kind, i32 target, usz x_start)
 {
-    MPI_Request *request;
+    MPI_Request request;
     if (target < 0)
     {
         return;
@@ -129,11 +132,11 @@ static void ghost_exchange_left_right(
     {
     case COMM_KIND_SEND_OP:
         MPI_Ibsend(
-            &mesh->cells[mesh->dim_x * mesh->dim_y * (x_start)], mesh->dim_y * mesh->dim_z * STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, request);
+            &mesh->cells[mesh->dim_x * mesh->dim_y * (x_start)], (int)(mesh->dim_y * mesh->dim_z * STENCIL_ORDER), MPI_DOUBLE, target, 0, MPI_COMM_WORLD, &request);
         break;
     case COMM_KIND_RECV_OP:
         MPI_Recv(
-            &mesh->cells[mesh->dim_x * mesh->dim_y * (x_start)], mesh->dim_y * mesh->dim_z * STENCIL_ORDER,
+            &mesh->cells[mesh->dim_x * mesh->dim_y * (x_start)], (int)(mesh->dim_y * mesh->dim_z * STENCIL_ORDER),
             MPI_DOUBLE,
             target,
             0,
@@ -148,7 +151,7 @@ static void ghost_exchange_left_right(
 static void ghost_exchange_top_bottom(
     comm_handler_t const *self, mesh_t *mesh, comm_kind_t comm_kind, i32 target, usz y_start)
 {
-    MPI_Request *request;
+    MPI_Request request;
     if (target < 0)
     {
         return;
@@ -161,10 +164,11 @@ static void ghost_exchange_top_bottom(
         {
         case COMM_KIND_SEND_OP:
             MPI_Ibsend(
-                &mesh->cells[mesh->dim_y * (y_start)], mesh->dim_z * STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, request);
+                &mesh->cells[mesh->dim_y * (y_start)], (int)(mesh->dim_z * STENCIL_ORDER), MPI_DOUBLE, target, 0, MPI_COMM_WORLD, &request);
+            break;
         case COMM_KIND_RECV_OP:
             MPI_Recv(
-                &mesh->cells[mesh->dim_y * (y_start)], mesh->dim_z * STENCIL_ORDER, MPI_DOUBLE,
+                &mesh->cells[mesh->dim_y * (y_start)], (int)(mesh->dim_z * STENCIL_ORDER), MPI_DOUBLE,
                 target,
                 0,
                 MPI_COMM_WORLD,
@@ -179,7 +183,7 @@ static void ghost_exchange_top_bottom(
 static void ghost_exchange_front_back(
     comm_handler_t const *self, mesh_t *mesh, comm_kind_t comm_kind, i32 target, usz z_start)
 {
-    MPI_Request *request;
+    MPI_Request request;
     if (target < 0)
     {
         return;
@@ -193,7 +197,7 @@ static void ghost_exchange_front_back(
             {
             case COMM_KIND_SEND_OP:
                 MPI_Ibsend(
-                    &mesh->cells[z_start], STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, request);
+                    &mesh->cells[z_start], STENCIL_ORDER, MPI_DOUBLE, target, 0, MPI_COMM_WORLD, &request);
                 break;
             case COMM_KIND_RECV_OP:
                 MPI_Recv(
@@ -214,23 +218,23 @@ void comm_handler_ghost_exchange(comm_handler_t const *self, mesh_t *mesh)
 {
     // Left to right phase
     ghost_exchange_left_right(self, mesh, COMM_KIND_SEND_OP, self->id_right, mesh->dim_x - 2 * STENCIL_ORDER);
+    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_left, 0);
     // Right to left phase
     ghost_exchange_left_right(self, mesh, COMM_KIND_SEND_OP, self->id_left, STENCIL_ORDER);
+    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_right, mesh->dim_x - STENCIL_ORDER);
     // Prevent mixing communication from left/right with top/bottom and front/back
     // Top to bottom phase
     ghost_exchange_top_bottom(self, mesh, COMM_KIND_SEND_OP, self->id_top, mesh->dim_y - 2 * STENCIL_ORDER);
+    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_bottom, 0);
     // Bottom to top phase
     ghost_exchange_top_bottom(self, mesh, COMM_KIND_SEND_OP, self->id_bottom, STENCIL_ORDER);
+    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_top, mesh->dim_y - STENCIL_ORDER);
     // Prevent mixing communication from top/bottom with left/right and front/back
     // Front to back phase
     ghost_exchange_front_back(self, mesh, COMM_KIND_SEND_OP, self->id_back, mesh->dim_z - 2 * STENCIL_ORDER);
+    ghost_exchange_front_back(self, mesh, COMM_KIND_RECV_OP, self->id_front, 0);
+
     // Back to front phase
     ghost_exchange_front_back(self, mesh, COMM_KIND_SEND_OP, self->id_front, STENCIL_ORDER);
-
-    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_left, 0);
-    ghost_exchange_left_right(self, mesh, COMM_KIND_RECV_OP, self->id_right, mesh->dim_x - STENCIL_ORDER);
-    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_bottom, 0);
-    ghost_exchange_top_bottom(self, mesh, COMM_KIND_RECV_OP, self->id_top, mesh->dim_y - STENCIL_ORDER);
-    ghost_exchange_front_back(self, mesh, COMM_KIND_RECV_OP, self->id_front, 0);
     ghost_exchange_front_back(self, mesh, COMM_KIND_RECV_OP, self->id_back, mesh->dim_z - STENCIL_ORDER);
 }

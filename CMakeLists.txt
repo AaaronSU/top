@@ -11,9 +11,10 @@ set(CMAKE_C_STANDARD 17)
 # endif()
 
 # if(CMAKE_COMPILER_IS_GNUCXX)
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -g")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -O3 -g")
+# elseif(CMAKE_COMPILER_IS_GNUC)
+#     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -O3 -g")
 # endif()
-
 
 find_package(MPI REQUIRED)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
