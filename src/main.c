@@ -96,17 +96,17 @@ i32 main(i32 argc, char *argv[argc + 1])
 #endif
 
     FILE *ofp;
-    if (NULL != output_path)
+    if (NULL == output_path)
+    {
+        ofp = stdout;
+    }
+    else
     {
         ofp = fopen(output_path, "wb");
         if (NULL == ofp)
         {
             error("failed to open output file `%s`", output_path);
         }
-    }
-    else
-    {
-        ofp = stdout;
     }
 
     comm_handler_t comm_handler =
